@@ -260,11 +260,36 @@ function render(){
  const q=search.value.trim().toLowerCase(),d=division.value.toLowerCase();
  const shown=entries.filter(row=>(!d||field(row,"Division").toLowerCase()===d)&&(!q||[field(row,"Shikona"),field(row,"Current Rank")].some(v=>v.toLowerCase().includes(q))));
  list.replaceChildren();
- for(const row of shown){
-  const item=document.createElement("div");item.className="roster";
-  const name=document.createElement("strong");name.textContent=field(row,"Shikona");
-  const rank=document.createElement("span");rank.textContent=field(row,"Current Rank")+" · "+field(row,"Division");
-  item.append(name,rank);list.append(item);
+ // Keep divisions distinct in the default view; never interleave Juryo with Makuuchi.
+ const groups=[{label:"Makuuchi",key:"makuuchi"},{label:"Juryo",key:"juryo"}];
+ const rankOrder=rank=>{
+  const r=rank.toLowerCase().replace(/\s+/g,"");
+  if(/^y(?:okozuna)?/.test(r))return 0;
+  if(/^o(?:zeki)?/.test(r))return 100;
+  if(/^s(?:ekiwake)?/.test(r))return 200;
+  if(/^k(?:omusubi)?/.test(r))return 300;
+  const m=r.match(/(?:maegashira|m|juryo|j)(\d+)/);
+  return m?(r.startsWith("j")?0:400)+Number(m[1])*10:9999;
+ };
+ const sideOrder=rank=>/west|w\b/i.test(rank)?1:0;
+ for(const group of groups){
+  const rows=shown.filter(row=>field(row,"Division").toLowerCase()===group.key)
+   .sort((a,b)=>rankOrder(field(a,"Current Rank"))-rankOrder(field(b,"Current Rank"))||sideOrder(field(a,"Current Rank"))-sideOrder(field(b,"Current Rank")));
+  if(!rows.length)continue;
+  const heading=document.createElement("h3");heading.textContent=group.label+" · "+rows.length+" rikishi";
+  heading.style.cssText="font:normal 25px Georgia,serif;margin:30px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--red)";
+  list.append(heading);
+  for(const row of rows){
+   const item=document.createElement("div");item.className="roster";
+   const name=document.createElement("strong");name.textContent=field(row,"Shikona");
+   const rank=document.createElement("span");rank.textContent=field(row,"Current Rank");
+   item.append(name,rank);list.append(item);
+  }
+ }
+ const others=shown.filter(row=>!groups.some(g=>g.key===field(row,"Division").toLowerCase()));
+ if(others.length){
+  const heading=document.createElement("h3");heading.textContent="Other divisions · "+others.length;heading.style.cssText="font:normal 25px Georgia,serif;margin:30px 0 12px";list.append(heading);
+  for(const row of others){const item=document.createElement("div");item.className="roster";item.textContent=field(row,"Shikona")+" · "+field(row,"Current Rank");list.append(item);}
  }
  status.textContent=shown.length+" of "+entries.length+" ranked rikishi · read-only";
 }
