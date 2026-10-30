@@ -544,7 +544,7 @@ function renderHeyas(teams){
 function renderLeaders(teams){
   const all=[];
   for(const t of teams)
-    for(const r of t.entries.filter(x=>!reserve(x))){
+  for(const r of t.entries){
       const p=pointsFor(r);
       if(p.points!==null)all.push({
         name:field(r,'Rikishi Name'),
