@@ -355,23 +355,62 @@ function setView(v){
 document.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>setView(n.dataset.view)));
 
 function calc(){
-  const rr=rosters(),dr=daily(),map=new Map();
+  const rr=rosters(), dr=daily(), map=new Map();
+  const swaps=sheets('Roster Swaps').filter(matches);
+
   for(const m of managers()){
-    const id=managerId(m),
-    entries=rr.filter(r=>managerId(r)===id),
-    active=entries.filter(r=>!reserve(r)),
-    keys=new Set(active.map(r=>field(r,'Rikishi ID')||field(r,'Rikishi Name')));
-    const scored=dr.filter(r=>managerId(r)===id&&(!keys.size||keys.has(field(r,'Rikishi ID')||field(r,'Rikishi Name')))&&number(r['Points'])!==null);
+    const id=managerId(m);
+    const entries=rr.filter(r=>managerId(r)===id);
+    const active=entries.filter(r=>!reserve(r));
+
+    const starterIds=new Set(
+      active.map(r=>field(r,'Rikishi ID')).filter(Boolean)
+    );
+
+    const teamSwaps=swaps.filter(r=>managerId(r)===id);
+    const swap=teamSwaps[0];
+
+    const scored=dr.filter(r=>{
+      if(managerId(r)!==id || number(r.Points)===null)
+        return false;
+
+      const rikishiId=field(r,'Rikishi ID');
+      const resultDay=Number(field(r,'Day'));
+
+      if(!Number.isInteger(resultDay) ||
+         resultDay<1 || resultDay>15)
+        return false;
+
+      if(teamSwaps.length>1)
+        return false;
+
+      if(swap && resultDay>=5){
+        const outgoing=field(swap,'Outgoing Rikishi ID');
+        const incoming=field(swap,'Incoming Rikishi ID');
+
+        return rikishiId===incoming ||
+          (rikishiId!==outgoing && starterIds.has(rikishiId));
+      }
+
+      return starterIds.has(rikishiId);
+    });
+
     map.set(id,{
       id,
       name:heyaName(m),
       entries,
       active,
-      score:scored.length?scored.reduce((a,r)=>a+Number(r.Points),0):null,
+      score:scored.length
+        ?scored.reduce((a,r)=>a+Number(r.Points),0)
+        :null,
       scored:scored.length
     });
   }
-  return [...map.values()].sort((a,b)=>(b.score??-Infinity)-(a.score??-Infinity)||a.name.localeCompare(b.name));
+
+  return [...map.values()].sort(
+    (a,b)=>(b.score??-Infinity)-(a.score??-Infinity)||
+      a.name.localeCompare(b.name)
+  );
 }
 
 function pointsFor(r){
