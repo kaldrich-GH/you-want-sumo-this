@@ -414,11 +414,46 @@ function calc(){
 }
 
 function pointsFor(r){
-  const id=field(r,'Rikishi ID'),name=field(r,'Rikishi Name');
-  const arr=daily().filter(d=>managerId(d)===managerId(r)&&(id?field(d,'Rikishi ID')===id:field(d,'Rikishi Name')===name));
+  const id=field(r,'Rikishi ID');
+  const manager=managerId(r);
+  const swaps=sheets('Roster Swaps').filter(
+    s=>field(s,'Basho ID')===basho &&
+       managerId(s)===manager
+  );
+
+  const swap=swaps[0];
+  const isReserve=reserve(r);
+
+  const arr=daily().filter(d=>{
+    if(managerId(d)!==manager ||
+       field(d,'Rikishi ID')!==id) return false;
+
+    const resultDay=Number(field(d,'Day'));
+    if(!Number.isInteger(resultDay) ||
+       resultDay<1 || resultDay>15) return false;
+
+    if(swaps.length>1) return false;
+
+    if(!swap) return !isReserve;
+
+    const outgoing=field(swap,'Outgoing Rikishi ID');
+    const incoming=field(swap,'Incoming Rikishi ID');
+
+    if(resultDay<5)
+      return !isReserve;
+
+    if(id===outgoing) return false;
+    if(id===incoming) return true;
+
+    return !isReserve;
+  });
+
   const valid=arr.filter(d=>number(d.Points)!==null);
+
   return {
-    points:valid.length?valid.reduce((a,d)=>a+Number(d.Points),0):null,
+    points:valid.length
+      ?valid.reduce((a,d)=>a+Number(d.Points),0)
+      :null,
     rows:arr
   };
 }
