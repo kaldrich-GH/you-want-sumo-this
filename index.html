@@ -264,8 +264,8 @@ body{font-size:16px;line-height:1.45}
 <div class="status-strip">
   <div class="wrap strip-inner">
     <div class="basho-switch">
-      <label for="basho-select">BASHO</label>
-      <select id="basho-select" aria-label="Choose current or previous basho"></select>
+      <label for="basho-select">BASHO ID</label>
+      <select id="basho-select" aria-label="Choose Basho ID (YYYY-MM)"></select>
     </div>
   </div>
 </div>
@@ -514,7 +514,7 @@ function render(){
   for(const b of bs){
     const id=field(b,'Basho ID');
     if(!id)continue;
-    const o=mk('option','',field(b,'Basho Name')||id);
+    const o=mk('option','',id);
     o.value=id;
     picker.append(o);
   }
