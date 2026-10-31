@@ -245,7 +245,7 @@ html{font-size:17px}
       <button class="active" data-view="standings">Standings</button>
       <button data-view="heyas">Heyas</button>
       <button data-view="results">Basho Tracker</button>
-      <a href="https://script.google.com/macros/s/AKfycbx_NKuKA29luOAfK3RiG7R-dyfITHSeVokxLc9nQ_Y/dev?page=manager" target="_blank" rel="noopener">Manager HQ ↗</a><a href="https://script.google.com/macros/s/AKfycbwd8G7p6xraSQAJVnnhhtEwnZVGK_xih-CYN8RnQn3hFTfHwNsGrGOpG7CH58mdcTA/exec" target="_blank" rel="noopener noreferrer">Commissioner HQ ↗</a>
+      <a href="https://script.google.com/macros/s/AKfycbwd8G7p6xraSQAJVnnhhtEwnZVGK_xih-CYN8RnQn3hFTfHwNsGrGOpG7CH58mdcTA/exec?page=manager" target="_blank" rel="noopener">Manager HQ ↗</a><a href="https://script.google.com/macros/s/AKfycbwd8G7p6xraSQAJVnnhhtEwnZVGK_xih-CYN8RnQn3hFTfHwNsGrGOpG7CH58mdcTA/exec" target="_blank" rel="noopener noreferrer">Commissioner HQ ↗</a>
     </nav>
   </div>
 </div>
@@ -314,6 +314,7 @@ html{font-size:17px}
       </div>
     </div>
   </div>
+  <section class="panel" id="published-basho-results" aria-live="polite"></section>
 </main>
 
 <div class="footer">YOU WANT SUMO THIS? · 大相撲</div>
@@ -354,108 +355,120 @@ function setView(v){
 }
 document.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>setView(n.dataset.view)));
 
-function calc(){
-  const rr=rosters(), dr=daily(), map=new Map();
-  const swaps=sheets('Roster Swaps').filter(matches);
-
-  for(const m of managers()){
-    const id=managerId(m);
-    const entries=rr.filter(r=>managerId(r)===id);
-    const active=entries.filter(r=>!reserve(r));
-
-    const starterIds=new Set(
-      active.map(r=>field(r,'Rikishi ID')).filter(Boolean)
-    );
-
-    const teamSwaps=swaps.filter(r=>managerId(r)===id);
-    const swap=teamSwaps[0];
-
-    const scored=dr.filter(r=>{
-      if(managerId(r)!==id || number(r.Points)===null)
-        return false;
-
-      const rikishiId=field(r,'Rikishi ID');
-      const resultDay=Number(field(r,'Day'));
-
-      if(!Number.isInteger(resultDay) ||
-         resultDay<1 || resultDay>15)
-        return false;
-
-      if(teamSwaps.length>1)
-        return false;
-
-      if(swap && resultDay>=5){
-        const outgoing=field(swap,'Outgoing Rikishi ID');
-        const incoming=field(swap,'Incoming Rikishi ID');
-
-        return rikishiId===incoming ||
-          (rikishiId!==outgoing && starterIds.has(rikishiId));
-      }
-
-      return starterIds.has(rikishiId);
-    });
-
-    map.set(id,{
-      id,
-      name:heyaName(m),
-      entries,
-      active,
-      score:scored.length
-        ?scored.reduce((a,r)=>a+Number(r.Points),0)
-        :null,
-      scored:scored.length
-    });
-  }
-
-  return [...map.values()].sort(
-    (a,b)=>(b.score??-Infinity)-(a.score??-Infinity)||
-      a.name.localeCompare(b.name)
-  );
+function publication(){
+  return db && db.publishedResults && db.publishedResults[basho] || null;
 }
-
-function pointsFor(r){
-  const id=field(r,'Rikishi ID');
-  const manager=managerId(r);
-  const swaps=sheets('Roster Swaps').filter(
-    s=>field(s,'Basho ID')===basho &&
-       managerId(s)===manager
-  );
-
+function teamName(manager,entries){
+  const ids=sheets('Basho Index').map(r=>field(r,'Basho ID')).filter(Boolean).sort();
+  if(basho===ids[ids.length-1])return heyaName(manager);
+  return field(entries[0],'Heya Name at Basho')||heyaName(manager);
+}
+function dailyScore(row){
+  return ['Contested Win Points','Torinaoshi Points','Kinboshi Points']
+    .reduce((sum,key)=>sum+(Number(row[key])||0),0);
+}
+function teamSwap(id,entries){
+  const swaps=sheets('Roster Swaps').filter(r=>matches(r)&&managerId(r)===id);
+  if(swaps.length>1)throw Error('Multiple roster swaps for '+id);
+  if(!swaps.length)return null;
   const swap=swaps[0];
-  const isReserve=reserve(r);
-
-  const arr=daily().filter(d=>{
-    if(managerId(d)!==manager ||
-       field(d,'Rikishi ID')!==id) return false;
-
-    const resultDay=Number(field(d,'Day'));
-    if(!Number.isInteger(resultDay) ||
-       resultDay<1 || resultDay>15) return false;
-
-    if(swaps.length>1) return false;
-
-    if(!swap) return !isReserve;
-
-    const outgoing=field(swap,'Outgoing Rikishi ID');
-    const incoming=field(swap,'Incoming Rikishi ID');
-
-    if(resultDay<5)
-      return !isReserve;
-
-    if(id===outgoing) return false;
-    if(id===incoming) return true;
-
-    return !isReserve;
-  });
-
-  const valid=arr.filter(d=>number(d.Points)!==null);
-
-  return {
-    points:valid.length
-      ?valid.reduce((a,d)=>a+Number(d.Points),0)
-      :null,
-    rows:arr
-  };
+  const starters=entries.filter(r=>!reserve(r)).map(r=>field(r,'Rikishi ID'));
+  const reserves=entries.filter(reserve);
+  if(Number(field(swap,'Effective Day'))!==5||
+    !starters.includes(field(swap,'Outgoing Rikishi ID'))||reserves.length!==1||
+    field(reserves[0],'Rikishi ID')!==field(swap,'Incoming Rikishi ID'))throw Error('Invalid roster swap for '+id);
+  return swap;
+}
+function activeOnDay(row,dayNumber,swap){
+  if(!Number.isInteger(dayNumber)||dayNumber<1||dayNumber>15)return false;
+  const id=field(row,'Rikishi ID');
+  if(swap&&dayNumber>=5){
+    if(id===field(swap,'Outgoing Rikishi ID'))return false;
+    if(id===field(swap,'Incoming Rikishi ID'))return true;
+  }
+  return !reserve(row);
+}
+function pointsFor(row){
+  const id=field(row,'Rikishi ID');
+  const manager=managerId(row);
+  const entries=rosters().filter(r=>managerId(r)===manager);
+  const swap=teamSwap(manager,entries);
+  const rows=daily().filter(d=>field(d,'Rikishi ID')===id&&activeOnDay(row,Number(field(d,'Day')),swap));
+  const snapshot=publication();
+  const team=snapshot&&snapshot.teams.find(t=>t.managerId===manager);
+  const award=snapshot&&snapshot.awards.find(a=>a.id===id);
+  const record=snapshot&&snapshot.finalRecords.find(r=>r.id===id);
+  const dailyPoints=rows.reduce((sum,r)=>sum+dailyScore(r),0);
+  let bonusPoints=0;
+  if(team&&team.bonusRikishiIds.includes(id)&&award)bonusPoints=Number(award.bonusPoints)||0;
+  let points=null;
+  if(rows.length||snapshot)points=dailyPoints+bonusPoints;
+  return {points,dailyPoints,bonusPoints,rows,record};
+}
+function calc(){
+  const rows=rosters();
+  const snapshot=publication();
+  const teams=[];
+  for(const manager of managers()){
+    const id=managerId(manager);
+    const entries=rows.filter(r=>managerId(r)===id);
+    if(!entries.length)continue;
+    const active=entries.filter(r=>!reserve(r));
+    let dailyPoints=0,scored=0;
+    for(const row of entries){
+      const info=pointsFor(row);
+      dailyPoints+=info.dailyPoints;
+      scored+=info.rows.length;
+    }
+    const publishedTeam=snapshot&&snapshot.teams.find(t=>t.managerId===id);
+    const bonusPoints=Number(publishedTeam&&publishedTeam.bonusPoints)||0;
+    let score=null;
+    if(scored||snapshot)score=dailyPoints+bonusPoints;
+    teams.push({id,name:teamName(manager,entries),entries,active,score,scored,dailyPoints,bonusPoints});
+  }
+  return teams.sort((a,b)=>(b.score??-Infinity)-(a.score??-Infinity)||a.name.localeCompare(b.name));
+}
+function finalRecordText(record){
+  if(!record)return '';
+  let text=String(record.wins??'—')+'–'+String(record.losses??'—');
+  if(record.absences)text+='–'+record.absences+' absent';
+  return text;
+}
+function awardText(record){
+  const awards=[];
+  if(record.fightingSpirit)awards.push('Fighting Spirit');
+  if(record.outstandingPerformance)awards.push('Outstanding Performance');
+  if(record.technique)awards.push('Technique');
+  if(record.yusho)awards.push('Yusho');
+  if(record.junYusho)awards.push('Jun-yusho');
+  return awards.join(' · ')||'—';
+}
+function renderPublishedResults(){
+  const area=$('published-basho-results');
+  area.replaceChildren();
+  const snapshot=publication();
+  area.append(mk('h2','', 'Final records & awards'));
+  const inner=mk('div','inner');
+  area.append(inner);
+  if(!snapshot){
+    inner.append(mk('p','muted','Final bonuses are not published for this basho. Standings show published daily points only.'));
+    return;
+  }
+  inner.append(mk('p','muted','Finalized · daily points + published tournament bonuses. Individual awards are archived for every listed rikishi; only the final active roster earns heya bonuses.'));
+  const table=mk('table','results-table');
+  const head=mk('thead');
+  const header=mk('tr');
+  ['Rikishi','Final record','Awards','Individual bonus'].forEach(t=>header.append(mk('th','',t)));
+  head.append(header);table.append(head);
+  const body=mk('tbody');
+  for(const record of snapshot.finalRecords){
+    const award=snapshot.awards.find(a=>a.id===record.id);
+    const tr=mk('tr');
+    [record.name,finalRecordText(record),awardText(record),String(award&&award.bonusPoints||0)]
+      .forEach(t=>tr.append(mk('td','',t)));
+    body.append(tr);
+  }
+  table.append(body);inner.style.overflowX='auto';inner.append(table);
 }
 
 function render(){
@@ -485,7 +498,7 @@ function render(){
     score=mk('span','points',t.score===null?'—':String(t.score));
     name.append(
       mk('div','teamname',t.name),
-      mk('div','meta',t.active.length+' starters · '+t.entries.length+' roster slots')
+      mk('div','meta',t.active.length+' starters · '+t.entries.length+' roster slots'+(publication()?' · Daily '+t.dailyPoints+' + bonus '+t.bonusPoints:''))
     );
     row.append(rank,name,score);
     row.addEventListener('click',()=>{
@@ -499,6 +512,7 @@ function render(){
   renderHeyas(teams);
   renderLeaders(teams);
   renderDays();
+  renderPublishedResults();
   $('sync-status').textContent='LIVE · '+teams.length+' HEYAS · '+rosters().length+' ROSTER ROWS';
 }
 
@@ -524,7 +538,7 @@ function renderHeyas(teams){
     const info=pointsFor(r),
     card=mk('div','rikishi'+(reserve(r)?' reserve':'')),
     art=mk('div','art'),
-    rank=mk('span','ranktag',field(r,'Rank','Current Rank','Slot')||'RIKISHI');
+    rank=mk('span','ranktag',field(r,'Basho Rank','Rank','Current Rank','Slot')||'RIKISHI');
     art.append(rank);
     const body=mk('div','body');
     body.append(
@@ -532,10 +546,11 @@ function renderHeyas(teams){
       mk('div','meta',reserve(r)?'RESERVE':'STARTER'),
       mk('div','score',(info.points??'—')+' pts')
     );
+    if(info.record){body.append(mk('div','meta','Final record '+finalRecordText(info.record)));body.append(mk('div','meta','Daily '+info.dailyPoints+' + bonus '+info.bonusPoints));const awards=awardText(info.record);if(awards!=='—')body.append(mk('div','meta',awards));}
     const wins=info.rows.filter(x=>/^(w|win)$/i.test(field(x,'Result','Outcome'))).length;
     if(info.rows.length)body.append(mk('div','meta',info.rows.length+' recorded results'+(wins?' · '+wins+' wins':'')));
-    if(info.rows.some(x=>/^(true|yes|1)$/i.test(field(x,'Kinboshi'))))body.append(mk('span','badge','★ KINBOSHI'));
-    if(info.rows.some(x=>/^(true|yes|1)$/i.test(field(x,'Torinaoshi'))))body.append(mk('span','badge','TORINAOSHI'));
+    if(info.rows.some(x=>Number(field(x,'Kinboshi Points'))>0))body.append(mk('span','badge','★ KINBOSHI'));
+    if(info.rows.some(x=>Number(field(x,'Torinaoshi Points'))>0))body.append(mk('span','badge','TORINAOSHI'));
     card.append(art,body);
     cards.append(card);
   }
@@ -587,13 +602,15 @@ function renderDays(){
   tbody=$('daily-rows');
   tbody.replaceChildren();
   for(const r of shown){
-    const tr=mk('tr'),
-    manager=managers().find(m=>managerId(m)===managerId(r));
+    const tr=mk('tr');
+    const owner=rosters().find(entry=>field(entry,'Rikishi ID')===field(r,'Rikishi ID'));
+    const manager=owner&&managers().find(m=>managerId(m)===managerId(owner));
+    const ownerEntries=owner?rosters().filter(e=>managerId(e)===managerId(owner)):[];
     for(const txt of [
       field(r,'Rikishi Name')||field(r,'Rikishi ID'),
       field(r,'Result','Outcome','Win/Loss')||'Recorded',
-      manager?heyaName(manager):'—',
-      number(r.Points)===null?'—':String(r.Points)
+      manager?teamName(manager,ownerEntries):'—',
+      String(dailyScore(r))
     ])tr.append(mk('td','',txt));
     tbody.append(tr);
   }
@@ -632,7 +649,8 @@ async function load(){
     const res=await fetch(ENDPOINT,{cache:'no-store',signal:ctl.signal});
     if(!res.ok)throw Error('HTTP '+res.status);
     const data=await res.json();
-    if(data.schemaVersion!==1||data.readOnly!==true||!data.sheets)throw Error('Unexpected league feed');
+    if(data.schemaVersion!==2||data.readOnly!==true||!data.sheets)throw Error('Unexpected league feed');
+    if(data.error)throw Error(data.error);
     db=data;
     render();
   }catch(e){
