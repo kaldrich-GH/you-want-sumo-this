@@ -101,15 +101,15 @@ nav button,nav a{padding:10px;font-size:11px}
 .mast{padding:9px 0}
 .mast .brand{font-size:19px;letter-spacing:-1px}
 .mast .seal{font-size:17px;padding:2px 6px}
-.hero-inner{min-height:240px;justify-content}
-.league-hero{margin:15px 0 20px;font-size(62px,10.5vw,138px);line-height:.83;letter-spacing:-.075em;font-weight:1000;text-shadow:5px 5px 0 #fff6df;max-width:950px}
-.hero-ink{font-size(70px,11vw,145px);font-weight:1000;line-height:1;transform(-9deg);opacity:.16;white-space;user-select}
-.basho-switch{display;align-items;gap:9px}
+.hero-inner{min-height:240px;justify-content:space-between}
+.league-hero{margin:15px 0 20px;font-size:clamp(62px,10.5vw,138px);line-height:.83;letter-spacing:-.075em;font-weight:1000;text-shadow:5px 5px 0 #fff6df;max-width:950px}
+.hero-ink{font-size:clamp(70px,11vw,145px);font-weight:1000;line-height:1;transform:rotate(-9deg);opacity:.16;white-space:nowrap;user-select:none}
+.basho-switch{display:flex;align-items:center;gap:9px}
 .basho-switch label{font-size:11px;letter-spacing:1.5px}
-.basho-switch select{max-width:230px;min-width:150px;background:#fff2cd;color:#161b1a;border:2px solid #ffcc38;border-radius:0;padding:7px 9px;font-size:13px;font-weight:900;cursor}
+.basho-switch select{max-width:230px;min-width:150px;background:#fff2cd;color:#161b1a;border:2px solid #ffcc38;border-radius:0;padding:7px 9px;font-size:13px;font-weight:900;cursor:pointer}
 @media(max-width:750px){
 .hero-inner{min-height:170px}
-.league-hero{font-size(49px,11vw,83px);letter-spacing:-.07em;text-shadow:3px 3px 0 #fff6df}
+.league-hero{font-size:clamp(49px,11vw,83px);letter-spacing:-.07em;text-shadow:3px 3px 0 #fff6df}
 .hero-ink{font-size:65px}
 .strip-inner{gap:9px}
 .basho-switch select{min-width:120px;max-width:180px}
@@ -117,15 +117,15 @@ nav button,nav a{padding:10px;font-size:11px}
 .dot{width:10px;height:10px}
 }
 @media(max-width:420px){
-.hero-ink{display}
-.league-hero{font-size(47px,12vw,67px)}
+.hero-ink{display:none}
+.league-hero{font-size:clamp(47px,12vw,67px)}
 }
 
 /* Focused navigation and basho-strip refinements */
 .nav-bar{background:#fff6df;border-bottom:4px solid var(--ink)}
-.nav-bar nav{display;justify-content;align-items;gap:7px;flex-wrap;padding:8px 0}
+.nav-bar nav{display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;padding:8px 0}
 .nav-bar nav button,.nav-bar nav a{font-size:13px;padding:13px 19px}
-.status-strip .strip-inner{justify-content;gap:20px}
+.status-strip .strip-inner{justify-content:space-between;gap:20px}
 @media(max-width:750px){
 .nav-bar nav{gap:3px;padding:6px 0}
 .nav-bar nav button,.nav-bar nav a{padding:10px 11px;font-size:11px}
@@ -135,45 +135,45 @@ nav button,nav a{padding:10px;font-size:11px}
 /* Load the user's own Musashi Brush font from the same folder as this HTML. */
 @font-face{
 font-family:"YWST Musashi";
-src("Musashi%20Brush.otf") format("opentype");
-font-style;
+src:url("Musashi%20Brush.otf") format("opentype");
+font-style:normal;
 font-weight:400;
-font-display
+font-display:swap
 }
-{--arcade-brush:"YWST Musashi","Musashi Brush",Impact,system-ui,sans-serif}
+:root{--arcade-brush:"YWST Musashi","Musashi Brush",Impact,system-ui,sans-serif}
 .hero{background:#ffcb35}
 .hero-inner{min-height:245px}
-.league-hero{font-family(--arcade-brush);font-weight:400;letter-spacing:.005em;line-height:.95;font-size(70px,10.3vw,132px);text-shadow:5px 6px 0 #fff3d2;margin:15px 0 19px;max-width}
-.hero-ink{opacity:.12;transform(-10deg);font-size(76px,13vw,165px)}
+.league-hero{font-family:var(--arcade-brush);font-weight:400;letter-spacing:.005em;line-height:.95;font-size:clamp(70px,10.3vw,132px);text-shadow:5px 6px 0 #fff3d2;margin:15px 0 19px;max-width:none}
+.hero-ink{opacity:.12;transform:rotate(-10deg);font-size:clamp(76px,13vw,165px)}
 .nav-bar{border-bottom:5px solid var(--ink)}
 .nav-bar nav{gap:10px;padding:8px 0}
-.nav-bar nav button,.nav-bar nav a{font-family(--arcade-brush);font-size(21px,2.4vw,29px);font-weight:400;text-transform;letter-spacing:.02em;padding:9px 20px;line-height:1.15}
-.nav-bar nav button.active{background(--red);color:#fff8e7;box-shadow:4px 4px 0 var(--ink)}
-.panel h2,.section-heading{font-family(--arcade-brush);font-size(27px,3vw,35px);font-weight:400;letter-spacing:.02em;text-transform;line-height:1.1}
-.place{font-family(--arcade-brush);font-style;font-weight:400;font-size:42px;line-height:1;display;justify-content;align-items;min-height:44px}
-.board-row(-n+3) .place{width:48px;height:51px;color:#fff8e5;text-shadow:2px 2px 0 #141b19;clip-path(8% 8%,94% 0,100% 85%,8% 100%,0 31%);transform(-6deg)}
-.board-row(1) .place{background:#e63723}
-.board-row(2) .place{background:#1c7795;transform(5deg)}
-.board-row(3) .place{background:#ae692f;transform(-3deg)}
-.strip-inner{justify-content!important;padding:10px 0}
-.basho-switch label{font-family(--arcade-brush);font-size:20px;font-weight:400;letter-spacing:.03em}
+.nav-bar nav button,.nav-bar nav a{font-family:var(--arcade-brush);font-size:clamp(21px,2.4vw,29px);font-weight:400;text-transform:none;letter-spacing:.02em;padding:9px 20px;line-height:1.15}
+.nav-bar nav button.active{background:var(--red);color:#fff8e7;box-shadow:4px 4px 0 var(--ink)}
+.panel h2,.section-heading{font-family:var(--arcade-brush);font-size:clamp(27px,3vw,35px);font-weight:400;letter-spacing:.02em;text-transform:none;line-height:1.1}
+.place{font-family:var(--arcade-brush);font-style:normal;font-weight:400;font-size:42px;line-height:1;display:inline-flex;justify-content:center;align-items:center;min-height:44px}
+.board-row:nth-child(-n+3) .place{width:48px;height:51px;color:#fff8e5;text-shadow:2px 2px 0 #141b19;clip-path:polygon(8% 8%,94% 0,100% 85%,8% 100%,0 31%);transform:rotate(-6deg)}
+.board-row:nth-child(1) .place{background:#e63723}
+.board-row:nth-child(2) .place{background:#1c7795;transform:rotate(5deg)}
+.board-row:nth-child(3) .place{background:#ae692f;transform:rotate(-3deg)}
+.strip-inner{justify-content:center!important;padding:10px 0}
+.basho-switch label{font-family:var(--arcade-brush);font-size:20px;font-weight:400;letter-spacing:.03em}
 .basho-switch select{max-width:290px;min-width:210px}
 @media(max-width:750px){
 .hero-inner{min-height:175px}
-.league-hero{font-size(47px,11vw,85px);text-shadow:3px 3px 0 #fff3d2}
+.league-hero{font-size:clamp(47px,11vw,85px);text-shadow:3px 3px 0 #fff3d2}
 .nav-bar nav{gap:3px}
-.nav-bar nav button,.nav-bar nav a{font-size(18px,4vw,23px);padding:9px 10px}
+.nav-bar nav button,.nav-bar nav a{font-size:clamp(18px,4vw,23px);padding:9px 10px}
 .place{font-size:32px}
-.board-row(-n+3) .place{width:38px;height:43px}
+.board-row:nth-child(-n+3) .place{width:38px;height:43px}
 }
 
 /* Typography and hero alignment pass — presentation only */
 html{font-size:17px}
-.hero-inner{min-height:275px;display;justify-content;align-items;text-align;position}
-.league-hero{position;z-index:2;width:100%;max-width:1080px;margin:25px auto 29px;padding:0 8px;font-size(72px,10.5vw,146px);line-height:1.04;letter-spacing:.015em;text-align;text-wrap;text-shadow:4px 5px 0 #fff3d2}
-.hero-ink{position;right:0;top:50%;transform(-50%) rotate(-10deg);opacity:.085;pointer-events;z-index:0}
-.nav-bar nav button,.nav-bar nav a{font-size(23px,2.5vw,32px)}
-.panel h2,.section-heading{font-size(30px,3.1vw,39px)}
+.hero-inner{min-height:275px;display:flex;justify-content:center;align-items:center;text-align:center;position:relative}
+.league-hero{position:relative;z-index:2;width:100%;max-width:1080px;margin:25px auto 29px;padding:0 8px;font-size:clamp(72px,10.5vw,146px);line-height:1.04;letter-spacing:.015em;text-align:center;text-wrap:balance;text-shadow:4px 5px 0 #fff3d2}
+.hero-ink{position:absolute;right:0;top:50%;transform:translateY(-50%) rotate(-10deg);opacity:.085;pointer-events:none;z-index:0}
+.nav-bar nav button,.nav-bar nav a{font-size:clamp(23px,2.5vw,32px)}
+.panel h2,.section-heading{font-size:clamp(30px,3.1vw,39px)}
 .teamname{font-size:19px}
 .points{font-size:27px}
 .meta{font-size:13px}
@@ -188,9 +188,9 @@ html{font-size:17px}
 .basho-switch select{font-size:15px}
 @media(max-width:750px){
 .hero-inner{min-height:210px}
-.league-hero{font-size(47px,10.8vw,82px);line-height:1.08;letter-spacing:.005em;padding:0 2px;margin:20px auto 23px;text-shadow:3px 3px 0 #fff3d2}
+.league-hero{font-size:clamp(47px,10.8vw,82px);line-height:1.08;letter-spacing:.005em;padding:0 2px;margin:20px auto 23px;text-shadow:3px 3px 0 #fff3d2}
 .hero-ink{right:-12px;opacity:.065}
-.nav-bar nav button,.nav-bar nav a{font-size(19px,4.2vw,25px)}
+.nav-bar nav button,.nav-bar nav a{font-size:clamp(19px,4.2vw,25px)}
 .board-row{grid-template-columns:45px 1fr auto;gap:8px}
 .place{font-size:36px}
 .teamname{font-size:16px}
@@ -198,30 +198,58 @@ html{font-size:17px}
 }
 @media(max-width:420px){
 .hero-inner{min-height:165px}
-.league-hero{font-size(44px,11vw,58px);letter-spacing:0}
-.hero-ink{display}
+.league-hero{font-size:clamp(44px,11vw,58px);letter-spacing:0}
+.hero-ink{display:none}
 }
 
 /* Larger, tighter hero lettering — requested refinement */
-.league-hero{font-size(82px,12vw,166px);line-height:.77;letter-spacing:-.025em;margin:20px auto 22px}
+.league-hero{font-size:clamp(82px,12vw,166px);line-height:.77;letter-spacing:-.025em;margin:20px auto 22px}
 @media(max-width:750px){
-.league-hero{font-size(53px,12.4vw,96px);line-height:.79;letter-spacing:-.025em;margin:16px auto 19px}
+.league-hero{font-size:clamp(53px,12.4vw,96px);line-height:.79;letter-spacing:-.025em;margin:16px auto 19px}
 }
 @media(max-width:420px){
-.league-hero{font-size(47px,12.2vw,66px);line-height:.8;letter-spacing:-.025em}
+.league-hero{font-size:clamp(47px,12.2vw,66px);line-height:.8;letter-spacing:-.025em}
 }
 
 /* XXL hero: deliberately oversized brush lettering; no other UI changes. */
 .hero-inner{min-height:355px}
-.league-hero{font-size(110px,16vw,230px);line-height:.70;letter-spacing:-.035em;max-width;width:100%;margin:35px auto 38px;padding:0;text-wrap}
+.league-hero{font-size:clamp(110px,16vw,230px);line-height:.70;letter-spacing:-.035em;max-width:none;width:100%;margin:35px auto 38px;padding:0;text-wrap:nowrap}
 @media(max-width:750px){
 .hero-inner{min-height:235px}
-.league-hero{font-size(62px,15.2vw,120px);line-height:.71;letter-spacing:-.035em;margin:26px auto 29px}
+.league-hero{font-size:clamp(62px,15.2vw,120px);line-height:.71;letter-spacing:-.035em;margin:26px auto 29px}
 }
 @media(max-width:420px){
 .hero-inner{min-height:185px}
 .league-hero{font-size:15vw;line-height:.72;letter-spacing:-.035em;margin:23px auto 26px}
 }
+
+/* Mobile readability: keep the brush face for headings, readable system text for details. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@media(max-width:750px){
+body{font-size:16px;line-height:1.45}
+.hero-inner{min-height:0;padding-top:24px;padding-bottom:24px}
+.league-hero{font-size:clamp(58px,15vw,112px);line-height:.95;letter-spacing:0;margin:12px auto;padding:0 4px}
+.nav-bar nav{gap:6px;padding:10px 0}
+.nav-bar nav button,.nav-bar nav a{font-size:24px;line-height:1.25;min-height:46px;padding:10px 13px}
+.basho-switch{width:100%;flex-wrap:wrap;justify-content:center}
+.basho-switch label{font-size:25px}
+.basho-switch select{font-size:16px;min-height:46px;max-width:100%}
+.toolbar{gap:14px;align-items:center}
+.toolbar button,.heya-pick button,.day-controls select{font-size:16px;min-height:46px}
+.meta,.muted,.tiny,.footer{font-size:14px;line-height:1.5}
+.teamname{font-size:18px;line-height:1.3;overflow-wrap:anywhere}
+.points{font-size:27px;line-height:1.2}
+.board-row{grid-template-columns:42px minmax(0,1fr) auto;gap:10px;padding:16px 4px}
+.board-row .meta{margin-top:5px}
+.panel h2,.section-heading{font-size:30px;line-height:1.2}
+.rikishi .name{font-size:18px;line-height:1.3}
+.rikishi .score{font-size:27px;line-height:1.3}
+.rikishi .ranktag,.rikishi .badge{font-size:13px;line-height:1.4}
+.results-table{font-size:15px;line-height:1.45;min-width:540px}
+.results-table td,.results-table th{padding:12px 10px}
+.feature{gap:10px;padding:16px 8px;font-size:16px;line-height:1.4}
+}
+
 </style>
 
 </head>
@@ -670,4 +698,5 @@ load();
 
 </body>
 </html>
+
 
