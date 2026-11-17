@@ -370,7 +370,7 @@ rosters=()=>sheets('Basho Rosters').filter(matches),
 daily=()=>sheets('Daily Results').filter(matches),
 managerId=r=>field(r,'Manager ID'),
 heyaName=r=>(field(r,'Current Heya Name','Heya Name','Manager ID')||'Unnamed Heya').replace(/Wockwockkage/gi,'Wockawockakage'),
-reserve=r=>/reserve|bench|alternate|substitute/i.test(field(r,'Slot'));
+reserve=r=>/^(reserve|bench|alternate|substitute|6)$/i.test(field(r,'Slot'));
 
 const mk=(tag,cls,txt)=>{
   const n=document.createElement(tag);
@@ -385,6 +385,33 @@ function setView(v){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>setView(n.dataset.view)));
+
+function ywstRecordBonuses_(rows) {
+  const records = new Map(), seen = new Map();
+  rows.forEach(row => {
+    const id = String(row.id || '').trim(), day = Number(row.day);
+    if (!id || !Number.isInteger(day) || day < 1 || day > 15) return;
+    const raw = String(row.result || '').trim().toLowerCase().replace(/[^a-z]/g,'');
+    let result = '';
+    if (['w','win','fusenwin','winfusen'].includes(raw)) result = 'win';
+    if (['l','loss','fusenloss','lossfusen'].includes(raw)) result = 'loss';
+    if (['a','absent','absence','kyujo'].includes(raw)) result = 'absence';
+    if (!result) return;
+    const key = day+'|'+id;
+    if (seen.has(key)) {
+      if (seen.get(key) !== result) throw new Error('Conflicting daily records for '+id+' on Day '+day+'.');
+      return;
+    }
+    seen.set(key,result);
+    if (!records.has(id)) records.set(id,{id:id,wins:0,losses:0,absences:0,recordPoints:0});
+    const record = records.get(id);
+    if (result === 'win') record.wins++;
+    if (result === 'loss') record.losses++;
+    if (result === 'absence') record.absences++;
+    record.recordPoints = record.wins >= 8 ? 2 : record.losses+record.absences >= 8 ? -2 : 0;
+  });
+  return records;
+}
 
 function publication(){
   return db && db.publishedResults && db.publishedResults[basho] || null;
@@ -432,9 +459,14 @@ function pointsFor(row){
   const dailyPoints=rows.reduce((sum,r)=>sum+dailyScore(r),0);
   let bonusPoints=0;
   if(team&&team.bonusRikishiIds.includes(id)&&award)bonusPoints=Number(award.bonusPoints)||0;
+  const allRecords=ywstRecordBonuses_(daily().map(r=>({id:field(r,'Rikishi ID'),day:field(r,'Day'),result:field(r,'Result','Outcome')})));
+  const liveRecord=allRecords.get(id)||null;
+  let liveRecordPoints=0;
+  if(!snapshot&&activeOnDay(row,15,swap)&&liveRecord)liveRecordPoints=liveRecord.recordPoints;
+  if(!snapshot)bonusPoints=liveRecordPoints;
   let points=null;
-  if(rows.length||snapshot)points=dailyPoints+bonusPoints;
-  return {points,dailyPoints,bonusPoints,rows,record};
+  if(rows.length||snapshot||liveRecordPoints)points=dailyPoints+bonusPoints;
+  return {points,dailyPoints,bonusPoints,rows,record,liveRecord,liveRecordPoints};
 }
 function calc(){
   const rows=rosters();
@@ -445,14 +477,15 @@ function calc(){
     const entries=rows.filter(r=>managerId(r)===id);
     if(!entries.length)continue;
     const active=entries.filter(r=>!reserve(r));
-    let dailyPoints=0,scored=0;
+    let dailyPoints=0,scored=0,liveRecordPoints=0;
     for(const row of entries){
       const info=pointsFor(row);
       dailyPoints+=info.dailyPoints;
       scored+=info.rows.length;
+      liveRecordPoints+=info.liveRecordPoints;
     }
     const publishedTeam=snapshot&&snapshot.teams.find(t=>t.managerId===id);
-    const bonusPoints=Number(publishedTeam&&publishedTeam.bonusPoints)||0;
+    const bonusPoints=snapshot?(Number(publishedTeam&&publishedTeam.bonusPoints)||0):liveRecordPoints;
     let score=null;
     if(scored||snapshot)score=dailyPoints+bonusPoints;
     teams.push({id,name:teamName(manager,entries),entries,active,score,scored,dailyPoints,bonusPoints});
@@ -529,7 +562,7 @@ function render(){
     score=mk('span','points',t.score===null?'—':String(t.score));
     name.append(
       mk('div','teamname',t.name),
-      mk('div','meta',t.active.length+' starters · '+t.entries.length+' roster slots'+(publication()?' · Daily '+t.dailyPoints+' + bonus '+t.bonusPoints:''))
+      mk('div','meta',t.active.length+' starters · '+t.entries.length+' roster slots'+' · Daily '+t.dailyPoints+' · '+(publication()?'bonuses ':'live KK/MK ')+(t.bonusPoints>0?'+':'')+t.bonusPoints)
     );
     row.append(rank,name,score);
     row.addEventListener('click',()=>{
@@ -578,7 +611,11 @@ function renderHeyas(teams){
       mk('div','score',(info.points??'—')+' pts')
     );
     if(info.record){body.append(mk('div','meta','Final record '+finalRecordText(info.record)));body.append(mk('div','meta','Daily '+info.dailyPoints+' + bonus '+info.bonusPoints));const awards=awardText(info.record);if(awards!=='—')body.append(mk('div','meta',awards));}
-    const wins=info.rows.filter(x=>/^(w|win)$/i.test(field(x,'Result','Outcome'))).length;
+    if(!publication()&&info.liveRecord){
+      body.append(mk('div','meta','Record '+info.liveRecord.wins+'–'+info.liveRecord.losses+(info.liveRecord.absences?'–'+info.liveRecord.absences+' absent':'')));
+      if(info.liveRecordPoints)body.append(mk('span','badge',info.liveRecordPoints>0?'KK +2':'MK −2'));
+    }
+    const wins=info.rows.filter(x=>/^(w|win|fusen win)$/i.test(field(x,'Result','Outcome'))).length;
     if(info.rows.length)body.append(mk('div','meta',info.rows.length+' recorded results'+(wins?' · '+wins+' wins':'')));
     if(info.rows.some(x=>Number(field(x,'Kinboshi Points'))>0))body.append(mk('span','badge','★ KINBOSHI'));
     if(info.rows.some(x=>Number(field(x,'Torinaoshi Points'))>0))body.append(mk('span','badge','TORINAOSHI'));
